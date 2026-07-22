@@ -1,6 +1,7 @@
 import mqtt from "mqtt";
 
-const BROKER = "wss://broker.hivemq.com:8884/mqtt";
+// EMQX public broker — more reliable than HiveMQ for WebSocket MQTT
+const BROKER = "wss://broker.emqx.io:8084/mqtt";
 const TOPIC_PREFIX = "photobooth_v1_";
 
 export interface RoomMember { id: string; name: string; }

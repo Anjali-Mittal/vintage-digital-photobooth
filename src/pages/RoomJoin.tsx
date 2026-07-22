@@ -19,10 +19,12 @@ export default function RoomJoin() {
   const [joinState, setJoinState] = useState<JoinState>("idle");
   const connRef = useRef<RoomConnection | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => () => {
     connRef.current?.disconnect();
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    if (retryRef.current) clearInterval(retryRef.current);
   }, []);
 
   function finishJoin(members: any[], photoCount: number, autoMode = false, autoInterval = 5) {
@@ -76,6 +78,8 @@ export default function RoomJoin() {
       upper,
       (msg: RoomMsg) => {
         if (msg.type === "ROOM_INFO") {
+          // Stop retrying and cancel the timeout — we got a response
+          if (retryRef.current) { clearInterval(retryRef.current); retryRef.current = null; }
           if (timeoutRef.current) clearTimeout(timeoutRef.current);
           if (msg.members.length >= 3) { conn.disconnect(); setJoinState("error_full"); return; }
           finishJoin(msg.members, msg.photoCount, msg.autoMode, msg.autoInterval);
@@ -84,14 +88,20 @@ export default function RoomJoin() {
       (status) => {
         if (status === "connected") {
           setJoinState("waiting");
-          // Ask creator for room info
-          setTimeout(() => conn.publish({ type: "REQUEST_INFO" }), 300);
-          // Timeout if no reply
+          // Send the first request immediately, then retry every 3s.
+          // A single QoS-0 message can be dropped silently — retrying
+          // is the only reliable way to get a response.
+          const sendRequest = () => conn.publish({ type: "REQUEST_INFO" });
+          setTimeout(sendRequest, 300);
+          retryRef.current = setInterval(sendRequest, 3000);
+          // Give up after 15 seconds total
           timeoutRef.current = setTimeout(() => {
+            if (retryRef.current) { clearInterval(retryRef.current); retryRef.current = null; }
             conn.disconnect();
             setJoinState("error_not_found");
-          }, 12_000);
+          }, 15_000);
         } else if (status === "error") {
+          if (retryRef.current) { clearInterval(retryRef.current); retryRef.current = null; }
           setJoinState("error_not_found");
         }
       },
