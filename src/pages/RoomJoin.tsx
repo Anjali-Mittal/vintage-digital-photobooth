@@ -34,10 +34,13 @@ export default function RoomJoin() {
     setMembers(updatedMembers); setPhotoCount(photoCount); clearPhotos();
     setAutoMode(autoMode); setAutoInterval(autoInterval);
 
-    // Publish JOIN over MQTT so cross-browser members see it
-    connRef.current?.publish({ type: "JOIN", member: me });
-    connRef.current?.disconnect();
+    // Publish JOIN over MQTT so cross-browser members see it.
+    // IMPORTANT: grab a local ref and delay disconnect — force-closing
+    // immediately would drop the message before it is transmitted.
+    const conn = connRef.current;
     connRef.current = null;
+    conn?.publish({ type: "JOIN", member: me });
+    setTimeout(() => conn?.disconnect(), 1000);
     navigate("/room/lobby");
   }
 

@@ -68,7 +68,18 @@ export default function Lobby() {
           navigate("/booth");
         }
       },
-      (status) => setMqttStatus(status),
+      (status) => {
+        setMqttStatus(status);
+        // Non-creator: re-announce presence once connected.
+        // This fixes the race where the original JOIN from RoomJoin was
+        // transmitted before the creator had subscribed, or MEMBER_UPDATE
+        // arrived before this lobby connection had subscribed.
+        if (status === "connected" && !isRoomCreator) {
+          setTimeout(() => {
+            conn.publish({ type: "JOIN", member: { id: myId, name: myName } });
+          }, 400);
+        }
+      },
     );
     connRef.current = conn;
 

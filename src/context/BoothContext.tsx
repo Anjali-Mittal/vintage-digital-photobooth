@@ -52,7 +52,7 @@ interface BoothContextType {
   setIsRoomCreator: (v: boolean) => void;
 
   members: Member[];
-  setMembers: (members: Member[]) => void;
+  setMembers: (members: Member[] | ((prev: Member[]) => Member[])) => void;
 
   currentTurn: number;
   setCurrentTurn: (t: number) => void;
