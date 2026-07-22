@@ -108,6 +108,8 @@ export default function Booth() {
       roomCode,
       (msg: RoomMsg) => {
         if (msg.type === "PHOTO_ADDED") {
+          // Ignore our own reflected message — we already updated state locally
+          if (msg.senderId === myId) return;
           addPhoto(msg.photo);
           setLocalPhotos(prev => [...prev, msg.photo]);
           setCurrentTurn(msg.nextTurn);
@@ -138,12 +140,12 @@ export default function Booth() {
   /* publish photo to room */
   const publishPhoto = useCallback(async (dataUrl: string, nextPhotos: string[], nextTurn: number, done: boolean) => {
     const compressed = await compressPhoto(dataUrl);
-    const payload: RoomMsg = { type: "PHOTO_ADDED", photo: compressed, nextTurn, done };
+    const payload: RoomMsg = { type: "PHOTO_ADDED", photo: compressed, nextTurn, done, senderId: myId };
     channelRef.current?.postMessage(payload);
     mqttRef.current?.publish(payload);
     const r = getRoomFromStorage(roomCode);
     if (r) saveRoomToStorage({ ...r, photos: nextPhotos, currentTurn: nextTurn, status: done ? "done" : "shooting" });
-  }, [roomCode]);
+  }, [roomCode, myId]);
 
   /* single manual shot */
   const captureOnce = useCallback(async (currentList: string[]): Promise<string[]> => {

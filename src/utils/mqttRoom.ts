@@ -12,7 +12,7 @@ export type RoomMsg =
   | { type: "JOIN"; member: RoomMember }
   | { type: "MEMBER_UPDATE"; members: RoomMember[] }
   | { type: "START" }
-  | { type: "PHOTO_ADDED"; photo: string; nextTurn: number; done: boolean }
+  | { type: "PHOTO_ADDED"; photo: string; nextTurn: number; done: boolean; senderId: string }
   | { type: "PING"; memberId: string };
 
 export type MQTTStatus = "connecting" | "connected" | "error" | "offline";
