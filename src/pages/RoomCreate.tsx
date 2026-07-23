@@ -9,7 +9,7 @@ const BORDER = "rgba(212,160,40,0.2)";
 
 export default function RoomCreate() {
   const navigate = useNavigate();
-  const { myId, setMyName, setRoomCode, setIsRoomCreator, setMembers, setPhotoCount,
+  const { setMode, myId, setMyName, setRoomCode, setIsRoomCreator, setMembers, setPhotoCount,
     clearPhotos, setAutoMode, setAutoInterval } = useBooth();
   const [name, setName] = useState("");
   const [count, setCount] = useState(4);
@@ -28,6 +28,7 @@ export default function RoomCreate() {
       status: "lobby", currentTurn: 0, photos: [],
       autoMode: localAuto, autoInterval: localInterval,
     });
+    setMode("room");
     setMyName(name.trim()); setRoomCode(code); setIsRoomCreator(true);
     setMembers([me]); setPhotoCount(count); clearPhotos();
     setAutoMode(localAuto); setAutoInterval(localInterval);

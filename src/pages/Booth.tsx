@@ -42,9 +42,13 @@ function CountdownRing({ seconds, total, label }: { seconds: number; total: numb
 
 export default function Booth() {
   const navigate = useNavigate();
-  const { mode, photoCount, myId, myName, members, currentTurn, setCurrentTurn,
+  const { mode, setMode, photoCount, myId, myName, members, currentTurn, setCurrentTurn,
     selectedFilter, setSelectedFilter, photos, addPhoto, roomCode,
     autoMode, autoInterval } = useBooth();
+
+  useEffect(() => {
+    if (roomCode) setMode("room");
+  }, [roomCode, setMode]);
 
   const videoRef    = useRef<HTMLVideoElement>(null);
   const canvasRef   = useRef<HTMLCanvasElement>(null);
@@ -203,7 +207,7 @@ export default function Booth() {
     if (isCapRef.current || camErr || (!isMyTurn && mode === "room") || localPhotos.length >= photoCount) return;
     isCapRef.current = true; setIsCapturing(true);
 
-    if (autoMode) {
+    if (autoMode && mode !== "room") {
       await startAutoSession(localPhotos);
     } else {
       const newList = await captureOnce(localPhotos);
@@ -211,9 +215,10 @@ export default function Booth() {
       if (newList.length >= photoCount) { await sleep(400); navigate("/strips"); }
     }
 
-    if (!autoMode) { /* navigation handled above */ }
-    else if (localPhotos.length >= photoCount || autoAbort.current) {
-      await sleep(400); navigate("/strips");
+    if (mode === "solo" && autoMode) {
+      if (localPhotos.length >= photoCount || autoAbort.current) {
+        await sleep(400); navigate("/strips");
+      }
     }
   }, [isCapturing, camErr, isMyTurn, mode, localPhotos, photoCount, autoMode, startAutoSession, captureOnce]);
 

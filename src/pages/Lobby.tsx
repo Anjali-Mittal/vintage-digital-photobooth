@@ -10,7 +10,7 @@ const BORDER = "rgba(212,160,40,0.2)";
 
 export default function Lobby() {
   const navigate = useNavigate();
-  const { roomCode, myId, myName, isRoomCreator, members, setMembers, setCurrentTurn, photoCount, autoMode, autoInterval } = useBooth();
+  const { setMode, roomCode, myId, myName, isRoomCreator, members, setMembers, setCurrentTurn, photoCount, autoMode, autoInterval } = useBooth();
   const [copied, setCopied] = useState(false);
   const [mqttStatus, setMqttStatus] = useState<MQTTStatus>("connecting");
   const connRef = useRef<RoomConnection | null>(null);
@@ -18,6 +18,7 @@ export default function Lobby() {
 
   useEffect(() => {
     if (!roomCode) { navigate("/"); return; }
+    setMode("room");
 
     // Same-browser sync (BroadcastChannel)
     try {
@@ -25,7 +26,7 @@ export default function Lobby() {
       channelRef.current = ch;
       ch.onmessage = (e) => {
         if (e.data.type === "JOIN") { const r = getRoomFromStorage(roomCode); if (r) setMembers(r.members); }
-        if (e.data.type === "START") { setCurrentTurn(0); navigate("/booth"); }
+        if (e.data.type === "START") { setMode("room"); setCurrentTurn(0); navigate("/booth"); }
       };
     } catch {}
 
@@ -64,6 +65,7 @@ export default function Lobby() {
           }
         }
         if (msg.type === "START") {
+          setMode("room");
           setCurrentTurn(0);
           navigate("/booth");
         }
@@ -99,6 +101,7 @@ export default function Lobby() {
   function handleStart() {
     const r = getRoomFromStorage(roomCode);
     if (r) saveRoomToStorage({ ...r, status: "shooting", currentTurn: 0 });
+    setMode("room");
     channelRef.current?.postMessage({ type: "START" });
     connRef.current?.publish({ type: "START" });
     setCurrentTurn(0);

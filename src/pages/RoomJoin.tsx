@@ -12,7 +12,7 @@ type JoinState = "idle" | "connecting" | "waiting" | "error_not_found" | "error_
 
 export default function RoomJoin() {
   const navigate = useNavigate();
-  const { myId, setMyName, setRoomCode, setIsRoomCreator, setMembers, setPhotoCount,
+  const { setMode, myId, setMyName, setRoomCode, setIsRoomCreator, setMembers, setPhotoCount,
     clearPhotos, setAutoMode, setAutoInterval } = useBooth();
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
@@ -32,6 +32,7 @@ export default function RoomJoin() {
     const me = { id: myId, name: name.trim() };
     const updatedMembers = [...members.filter((m: any) => m.id !== myId), me];
 
+    setMode("room");
     setMyName(name.trim()); setRoomCode(upper); setIsRoomCreator(false);
     setMembers(updatedMembers); setPhotoCount(photoCount); clearPhotos();
     setAutoMode(autoMode); setAutoInterval(autoInterval);
@@ -63,6 +64,7 @@ export default function RoomJoin() {
         ch.postMessage({ type: "JOIN", member: me });
         ch.close();
       } catch {}
+      setMode("room");
       setMyName(name.trim()); setRoomCode(upper); setIsRoomCreator(false);
       setMembers(updated.members); setPhotoCount(room.photoCount); clearPhotos();
       setAutoMode(room.autoMode ?? false); setAutoInterval(room.autoInterval ?? 5);
