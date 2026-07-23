@@ -11,7 +11,7 @@ export type RoomMsg =
   | { type: "ROOM_INFO"; photoCount: number; members: RoomMember[]; autoMode: boolean; autoInterval: number }
   | { type: "JOIN"; member: RoomMember }
   | { type: "MEMBER_UPDATE"; members: RoomMember[] }
-  | { type: "START" }
+  | { type: "START"; members?: RoomMember[]; photoCount?: number }
   | { type: "PHOTO_ADDED"; photo: string; nextTurn: number; done: boolean; senderId: string }
   | { type: "PING"; memberId: string };
 
@@ -66,8 +66,7 @@ export class RoomConnection {
   publish(msg: RoomMsg): boolean {
     if (!this.client?.connected) return false;
     const str = JSON.stringify(msg);
-    // HiveMQ public broker max payload: ~128KB
-    if (str.length > 120_000) {
+    if (str.length > 90_000) {
       console.warn("[MQTT] Message too large, skipping:", str.length);
       return false;
     }
@@ -85,8 +84,8 @@ export class RoomConnection {
   }
 }
 
-/** Compress a captured photo for MQTT transmission. Keeps under ~60KB. */
-export function compressPhoto(dataUrl: string, maxW = 480, quality = 0.6): Promise<string> {
+/** Compress a captured photo for MQTT transmission. Keeps under ~15KB for reliable WebSocket frames. */
+export function compressPhoto(dataUrl: string, maxW = 320, quality = 0.4): Promise<string> {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {

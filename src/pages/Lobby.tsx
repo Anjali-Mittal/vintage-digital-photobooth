@@ -26,7 +26,11 @@ export default function Lobby() {
       channelRef.current = ch;
       ch.onmessage = (e) => {
         if (e.data.type === "JOIN") { const r = getRoomFromStorage(roomCode); if (r) setMembers(r.members); }
-        if (e.data.type === "START") { setMode("room"); setCurrentTurn(0); navigate("/booth"); }
+        if (e.data.type === "START") {
+          if (e.data.members) setMembers(e.data.members);
+          if (e.data.photoCount) setPhotoCount(e.data.photoCount);
+          setMode("room"); setCurrentTurn(0); navigate("/booth");
+        }
       };
     } catch {}
 
@@ -65,6 +69,8 @@ export default function Lobby() {
           }
         }
         if (msg.type === "START") {
+          if (msg.members && msg.members.length > 0) setMembers(msg.members as Member[]);
+          if (msg.photoCount) setPhotoCount(msg.photoCount);
           setMode("room");
           setCurrentTurn(0);
           navigate("/booth");
@@ -102,8 +108,9 @@ export default function Lobby() {
     const r = getRoomFromStorage(roomCode);
     if (r) saveRoomToStorage({ ...r, status: "shooting", currentTurn: 0 });
     setMode("room");
-    channelRef.current?.postMessage({ type: "START" });
-    connRef.current?.publish({ type: "START" });
+    const startPayload: RoomMsg = { type: "START", members, photoCount };
+    channelRef.current?.postMessage(startPayload);
+    connRef.current?.publish(startPayload);
     setCurrentTurn(0);
     navigate("/booth");
   }

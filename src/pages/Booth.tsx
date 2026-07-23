@@ -50,6 +50,12 @@ export default function Booth() {
     if (roomCode) setMode("room");
   }, [roomCode, setMode]);
 
+  const membersRef = useRef(members);
+  const currentTurnRef = useRef(currentTurn);
+
+  useEffect(() => { membersRef.current = members; }, [members]);
+  useEffect(() => { currentTurnRef.current = currentTurn; }, [currentTurn]);
+
   const videoRef    = useRef<HTMLVideoElement>(null);
   const canvasRef   = useRef<HTMLCanvasElement>(null);
   const channelRef  = useRef<BroadcastChannel | null>(null);
@@ -95,6 +101,7 @@ export default function Booth() {
       channelRef.current = ch;
       ch.onmessage = e => {
         if (e.data.type === "PHOTO_ADDED") {
+          if (e.data.senderId === myId) return;
           addPhoto(e.data.photo);
           setLocalPhotos(prev => [...prev, e.data.photo]);
           setCurrentTurn(e.data.nextTurn);
@@ -103,7 +110,7 @@ export default function Booth() {
       };
     } catch {}
     return () => { channelRef.current?.close(); channelRef.current = null; };
-  }, [mode, roomCode]);
+  }, [mode, roomCode, myId]);
 
   /* MQTT room connection */
   useEffect(() => {
@@ -124,7 +131,7 @@ export default function Booth() {
     );
     mqttRef.current = conn;
     return () => { conn.disconnect(); mqttRef.current = null; };
-  }, [mode, roomCode]);
+  }, [mode, roomCode, myId]);
 
   /* core capture: take one photo, returns the dataUrl */
   const doCapture = useCallback(async (): Promise<string | null> => {
@@ -162,12 +169,14 @@ export default function Booth() {
     setLocalPhotos(newList); addPhoto(dataUrl);
     const done = newList.length >= photoCount;
     if (mode === "room") {
-      const nextTurn = (currentTurn + 1) % Math.max(members.length, 1);
+      const activeMembers = membersRef.current;
+      const turnNow = currentTurnRef.current;
+      const nextTurn = activeMembers.length > 0 ? (turnNow + 1) % activeMembers.length : 0;
       setCurrentTurn(nextTurn);
       await publishPhoto(dataUrl, newList, nextTurn, done);
     }
     return newList;
-  }, [doCapture, addPhoto, photoCount, mode, currentTurn, members, publishPhoto]);
+  }, [doCapture, addPhoto, photoCount, mode, publishPhoto]);
 
   /* auto capture loop */
   const startAutoSession = useCallback(async (startList: string[]) => {
